@@ -1,0 +1,2 @@
+seed	n_iter	data_loading_seconds	candidate_circuits_seconds	initialization_seconds	estimation_seconds	total_seconds
+20260723	50	41.452	16.564	6.764	60.332	125.111

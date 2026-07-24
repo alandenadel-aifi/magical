@@ -1,0 +1,13 @@
+output	pearson_r	mae	max_abs_err	n_elements	thresh_0.8_jaccard	thresh_0.8_r_positive	thresh_0.8_py_positive	thresh_0.8_shared	thresh_0.95_jaccard	thresh_0.95_r_positive	thresh_0.95_py_positive	thresh_0.95_shared	circuits_jaccard	circuits_precision	circuits_recall	circuits_r_only	circuits_py_only	circuits_shared	tf_participation_spearman	tf_participation_pearson
+B_prior	1	4.95727e-17	5.77316e-15	184258																
+L_prior	1	4.9874e-18	7.99361e-15	114030																
+TF_Peak_Binding_prob	0.993499	0.00814629	0.509804	184258	0.885249	14500	14563	13647												
+Peak_Gene_Looping_prob	0.998274	0.000164044	0.27451	114030					0.681818	324	342	270								
+Noise_parameters sigma_A	-0.107398	36.0498	427.683	50																
+Noise_parameters sigma_R	-0.0207614	8.75126	156.066	50																
+Circuits (triples)				16519									0.624554	0.742551	0.797172	2625	3577	10317		
+Circuits (TF set)				509									1			0	0	509	0.976554	0.98935
+Circuits (Peak set)				306									0.728758			37	46	223		
+Circuits (Gene set)				252									0.706349			35	39	178		
+Circuits (Peak-Gene pairs)				396									0.681818			54	72	270		
+Circuits (TF-Peak pairs)				12975									0.658882			1976	2450	8549		
