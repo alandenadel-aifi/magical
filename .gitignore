@@ -1,0 +1,15 @@
+__MACOSX/
+Demo\ input\ files/
+Demo\ input.zip
+
+# Generated MAGICAL outputs (produced by tutorial.R / MAGICAL_circuits_output)
+MAGICAL_selected_regulatory_circuits.txt
+re-implementation/**/MAGICAL_selected_regulatory_circuits.txt
+
+# Snapshots are regenerable via re-implementation/scripts/gen_demo_parity_snapshots.R
+# and re-implementation/scripts/save_py_snapshots.py — keep whole dirs out of git.
+tests/snapshots*/
+
+# Python bytecode caches
+tests/__pycache__/
+src/magical/__pycache__/
