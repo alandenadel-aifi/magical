@@ -28,17 +28,17 @@ Both must be numerically consistent with the R original (statistical equivalence
 | [`src/magical/circuits.py`](src/magical/circuits.py) — `Candidate_circuits_construction_{with,without}_TAD` | ✅ done |
 | `tests/` mirroring R suite | ✅ done (10 test files) |
 | Synthetic fixture parity with R helper | ✅ done ([tests/conftest.py](tests/conftest.py)) |
-| **Cross-language parity tests (numpy vs R)** | ✅ **done** — synthetic fixture at 50 iters, real demo dataset at 1000 iters |
+| **Cross-language parity tests (numpy vs R vs C++)** | ✅ **done** — 1000 iters, 6-way comparison on Linux |
 | pybind11 bindings | ❌ not started (stage P2) |
 
 **Test totals: 72 tests. 57 passing, 15 skipped (12 demo-parity + 3 stage-P2), 0 failing.**
 
 Run: `uv run pytest`
-Slow opt-in (demo-dataset parity, ~11 min per run): `MAGICAL_RUN_SLOW_TESTS=1 uv run pytest`
+Slow opt-in (demo-dataset parity, ~17 min per run on Linux): `MAGICAL_RUN_SLOW_TESTS=1 uv run pytest`
 
-### Cross-language parity numbers (2026-07-23)
+### Cross-language parity numbers
 
-**Synthetic fixture** — run `Rscript re-implementation/scripts/gen_parity_snapshots.R`
+**Synthetic fixture (macOS, 2026-07-23)** — run `Rscript re-implementation/scripts/gen_parity_snapshots.R`
 then `uv run pytest tests/test_parity_r.py`.
 
 | Comparison | Metric | Value |
@@ -47,6 +47,17 @@ then `uv run pytest tests/test_parity_r.py`.
 | numpy vs R `MAGICAL_estimation` @ 50 iters, TF-Peak posterior | Pearson corr | 0.98 – 0.99 |
 | numpy vs R `MAGICAL_estimation` @ 50 iters, Peak-Gene posterior | Pearson corr | 0.98 – 0.99 |
 | Zero-prior mask agreement | exact | ✅ |
+
+**Linux 1000-iter benchmark (2026-07-24):**
+
+| Backend | BLAS | Estimation (mean 2 seeds) | vs R |
+|---|---|---:|---:|
+| R (ref BLAS) | libRblas | 2832.9 s | 1.00× |
+| **Python numpy (OpenBLAS Haswell)** | scipy-openblas | **990.0 s** | **2.86×** |
+| C++ / Rcpp (ref BLAS) | libRblas | 1790.4 s | 1.58× |
+
+See [BENCHMARKS.md](BENCHMARKS.md) for the full 6-way cross-language parity table
+(all cross pairs within intra-language MCMC noise floor).
 
 **Real demo dataset @ n_iter = 1000 (paper defaults)** — snapshots produced by
 [`gen_demo_parity_snapshots.R`](re-implementation/scripts/gen_demo_parity_snapshots.R) /

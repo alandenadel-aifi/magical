@@ -8,14 +8,14 @@ Target to beat: **1870.942 s** elapsed on the demo dataset at `iteration_num = 1
 
 ---
 
-## Current state (stage 1 complete)
+## Current state (stages 1 + 2 complete)
 
 | Piece | Status |
 |---|---|
 | Directory skeleton (`R/`, `src/`, `tests/`) | ✅ |
 | R wrapper with same public API as original | ✅ delegates to original R code |
 | `backend = "r"` path | ✅ works |
-| `backend = "cpp"` path | ❌ stubbed — raises informative error |
+| `backend = "cpp"` path | ✅ implemented and benchmarked |
 | Synthetic test fixture | ✅ [`tests/testthat/helper-synthetic.R`](re-implementation/tests/testthat/helper-synthetic.R) |
 | API-contract tests | ✅ 4 passing |
 | Initialization tests | ✅ 11 passing |
@@ -23,24 +23,41 @@ Target to beat: **1870.942 s** elapsed on the demo dataset at `iteration_num = 1
 | Estimation edge-case tests | ✅ 6 passing |
 | Output-file tests | ✅ 3 passing |
 | r-vs-r cross-seed equivalence | ✅ 1 passing |
-| cpp-vs-r equivalence | ⏭ skipped (backend missing) |
-| Rcpp toolchain build probe | ✅ passing (official R-gfortran installed at `/opt/gfortran`) |
-| Full demo-data integration | ⏭ skipped (opt-in slow) |
+| cpp-vs-r equivalence | ✅ passing (correlation ≥ 0.90) |
+| Rcpp toolchain build probe | ✅ passing |
+| Full demo-data integration | ✅ benchmarked at 1000 iter on Linux |
 
 **Test totals: 44 tests. 40 passing (+1 with `MAGICAL_TEST_CPP_BUILD=1` = 41), 3–4 skipped, 0 failing.**
 
 Run: `Rscript re-implementation/tests/testthat.R`  
 Opt-in flags: `MAGICAL_TEST_CPP_BUILD=1`, `MAGICAL_RUN_SLOW_TESTS=1`
 
+### Linux benchmark (2026-07-24, Intel Xeon Platinum 8581C @ 2.10 GHz)
+
+| Backend | BLAS | 1000-iter estimation (mean 2 seeds) | vs R |
+|---|---|---:|---:|
+| R (ref BLAS) | libRblas | 2832.9 s | 1.00× |
+| **C++ / Rcpp (ref BLAS)** | libRblas | **1790.4 s** | **1.58×** |
+| Python numpy (OpenBLAS Haswell) | scipy-openblas | 990.0 s | 2.86× |
+
+C++ currently trails Python because both R and the Rcpp `.so` share R's ref BLAS.
+Once R is switched to OpenBLAS (Path C in [TODO.md](TODO.md)), C++ is projected
+to reach ~160–280 s (≥10× vs R), overtaking Python.
+
+### 6-way statistical equivalence (Linux, 1000 iter)
+
+All cross-language Jaccard values fall within the intra-language MCMC noise
+floor (~0.90). C++ output is statistically indistinguishable from R and Python.
+See [BENCHMARKS.md](BENCHMARKS.md) for the full 6×6 matrix.
+
 ---
 
 ## Blockers before stage 2 can start
 
-~~1. gfortran runtime not installed~~ — **resolved 2026-07-23.** Official R-gfortran build installed at `/opt/gfortran`. `MAGICAL_TEST_CPP_BUILD=1 Rscript re-implementation/tests/testthat.R` now compiles and loads `src/magical.cpp` cleanly.
+~~1. gfortran runtime not installed~~ — **resolved 2026-07-23.**
+~~2. Decision on statistical equivalence~~ — **confirmed: correlation ≥ 0.90.**
 
-2. **Decision confirmed with user:** statistical equivalence (Option B) — Armadillo RNG is fine, tests use correlation ≥ 0.90 instead of bit-identical.
-
-**No blockers remaining. Stage 2 can start.**
+**No blockers remaining. Stage 2 is complete. Next: § "Extract the C++ core" in [TODO.md](TODO.md).**
 
 ---
 

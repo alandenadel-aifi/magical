@@ -9,22 +9,81 @@ per-workstream plans:
 
 ---
 
-## Status snapshot (as of 2026-07-23)
+## Status snapshot (as of 2026-07-25)
 
 | Workstream | State |
 |---|---|
-| Python numpy port (stage P1) | ✅ complete — parity with R at demo scale, 3.02× speedup |
-| C++ port via Rcpp/Armadillo (stage 2) | ✅ complete — 3-way parity confirmed at 50 iter |
+| Python numpy port (stage P1) | ✅ complete — parity with R at demo scale, 3.02× (macOS) / 2.86× (Linux ref BLAS) |
+| C++ port via Rcpp/Armadillo (stage 2) | ✅ complete — 6-way parity confirmed at 1000 iter on Linux |
 | C++ standalone / pybind11 (stage P2) | ⏳ not started |
 | Test suites | ✅ R: 44 tests (40 pass / 4 opt-in). Python: 72 tests (57 pass / 15 gated). |
-| Cross-language parity (R ↔ Py ↔ Cpp) | ✅ measured manually at 50 iter — not yet encoded as tests |
-| BLAS story documented | ✅ (this doc, § "BLAS backend") |
+| Cross-language parity (R ↔ Py ↔ C++) | ✅ measured at 1000 iter on Linux — all cross pairs within intra-language noise floor |
+| BLAS story documented | ✅ Linux measured; Haswell detection issue identified (this doc § 1) |
+| Linux benchmarks (ref BLAS) | ✅ measured 2026-07-24 — see [BENCHMARKS.md](BENCHMARKS.md) |
+| Linux OpenBLAS for R + C++ (Path C) | ✅ measured 2026-07-25 — C++ 624 s, beats Python (982 s) by 1.57× |
 | Linux setup / Dockerfile | ⏳ not started |
 | CI | ⏳ not started |
 
 ---
 
 ## 1. BLAS backend — the big story
+
+### Confirmed behaviour on Linux (2026-07-24)
+
+Machine: Intel Xeon Platinum 8581C @ 2.10 GHz, Ubuntu 22.04 LTS.
+
+**50-iter estimation:**
+
+| Backend | Estimation | vs R |
+|---|---:|---:|
+| R (ref BLAS) | 148.8 s | 1.00× |
+| C++ / Rcpp (ref BLAS) | 89.1 s | 1.67× |
+| Python numpy (OpenBLAS Haswell) | 50.2 s | 2.96× |
+
+**1000-iter estimation (mean of 2 seeds):**
+
+| Backend | BLAS | Estimation | vs R ref-BLAS |
+|---|---|---:|---:|
+| R | ref BLAS | 2833 s | 1.00× |
+| C++ / Rcpp | ref BLAS | 1790 s | 1.58× |
+| Python numpy | OpenBLAS Haswell | 982 s | 2.88× |
+| R | conda OpenBLAS | 2158 s | **1.31×** |
+| **C++ / Rcpp** | **conda OpenBLAS** | **624 s** | **4.54×** |
+
+The macOS hypothesis is confirmed: C++ and R share the same ref BLAS bottleneck;
+Python leads because it uses OpenBLAS even on the sub-optimal Haswell codepath.
+
+### OpenBLAS Haswell detection issue (Linux-specific)
+
+`scipy-openblas` 0.3.33 reports:
+```
+"openblas configuration": "OpenBLAS 0.3.33 USE64BITINT DYNAMIC_ARCH NO_AFFINITY Haswell MAX_THREADS=64"
+```
+
+The Xeon Platinum 8581C is a 4th-gen Intel Xeon Scalable (Sapphire Rapids or
+Ice Lake SP family). Both support AVX-512. OpenBLAS `DYNAMIC_ARCH` uses CPUID
+to select a microarchitecture codepath at runtime; if the runtime CPU string
+doesn’t match a known profile, it falls back to the most recent safe match
+(Haswell = AVX2). This means we’re leaving AVX-512 performance on the table
+on both the Python and C++ paths.
+
+Projected gain from the correct codepath: 1.5–2× on the dominant GEMM kernel
+(`L.T @ A_estimate` in `peak_gene_looping_sampling`).
+
+Mitigation:
+```bash
+# Verify the detection:
+python3 -c "import numpy as np; np.show_config()" | grep -i openblas
+# Check CPU flags:
+grep -m1 'flags' /proc/cpuinfo | grep -o 'avx512[^ ]*' | sort
+# Option 1: use system apt OpenBLAS (may have a different default target)
+sudo apt install libopenblas-dev
+sudo update-alternatives --config libblas.so.3-x86_64-linux-gnu
+# Option 2: build OpenBLAS from source targeting the actual arch:
+#   cmake -DTARGET=SKYLAKEX   # AVX-512 Skylake-X / Cascade Lake
+#   cmake -DTARGET=SAPPHIRERAPIDS
+# Option 3: Intel MKL (always detects the correct ISA)
+```
 
 **Symptom** (seen 2026-07-23, MacBook Apple Silicon, 50-iter demo estimation):
 
@@ -107,19 +166,23 @@ Roughly in order of effort:
   entirely, link `-lopenblas -llapack` (Linux) or `-framework Accelerate`
   (macOS). Requires extracting the core out of `magical.cpp` first — see § 2.
 
-### Expected numbers once BLAS is fixed
+### Expected numbers once BLAS is fixed (Linux, OpenBLAS wired to R + C++)
 
-Rough projection on a mid-range x86 Linux box with OpenBLAS:
+Updated with **confirmed** Linux OpenBLAS measurements (2026-07-25). The
+AVX-512 path remains unexplored (scipy-openblas ignores `OPENBLAS_CORETYPE`).
 
-| implementation | 50-iter estimation |
-|---|---:|
-| R baseline (OpenBLAS) | ~15–25 s |
-| C++ via Rcpp (OpenBLAS) | ~6–12 s |
-| NumPy (bundled OpenBLAS/MKL) | ~25–35 s |
-| **Standalone C++ (OpenBLAS + buffer reuse)** | **~3–8 s** |
+| implementation | 1000-iter estimation | vs R ref-BLAS | notes |
+|---|---:|---:|---|
+| R (ref BLAS, current) | 2833 s | 1.00× | measured |
+| Python numpy (OpenBLAS Haswell, current) | 982 s | 2.88× | measured |
+| R (conda OpenBLAS) | **2158 s** | **1.31×** | measured 2026-07-25 |
+| **C++ / Rcpp (conda OpenBLAS)** | **624 s** | **4.54×** | **measured 2026-07-25 — beats Python ✅** |
+| Python numpy (OpenBLAS AVX-512) | ~500–700 s | ~4–6× | Haswell→AVX-512 fix; scipy-openblas ignores CORETYPE |
+| C++ / Rcpp (OpenBLAS AVX-512) | ~300–450 s | ~6–9× | would require rebuilding OpenBLAS targeting SKYLAKEX |
+| Standalone C++ (OpenBLAS, no R) | ~200–350 s | ~8–14× | no R overhead; see § 2 |
 
-The "≥10× over R" target from [CPP_PLAN.md](CPP_PLAN.md) becomes trivial on
-Linux with a configured BLAS.
+The original “≥10× over R” target from [CPP_PLAN.md](CPP_PLAN.md) is achievable
+once OpenBLAS is wired in and the AVX-512 codepath is used.
 
 ### Threading gotcha
 

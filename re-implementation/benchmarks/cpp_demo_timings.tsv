@@ -1,2 +1,8 @@
-seed	n_iter	data_loading_seconds	candidate_circuits_seconds	initialization_seconds	estimation_seconds	total_seconds
-20260723	50	41.452	16.564	6.764	60.332	125.111
+seed	n_iter	blas	data_loading_seconds	candidate_circuits_seconds	initialization_seconds	estimation_seconds	total_seconds
+20260723	50	ref_blas	41.452	16.564	6.764	60.332	125.111
+20260723	50	ref_blas	68.672	53.911	10.542	89.137	222.262
+20260723	1000	ref_blas	68.08	51.865	10.529	1794.839	1925.314
+42	1000	ref_blas	69.435	54.585	10.522	1785.848	1920.39
+20260723	50	ref_blas	70.215	54.699	10.397	31.416	166.728
+20260723	1000	openblas	70.467	53.413	10.294	626.09	760.264
+42	1000	openblas	69.433	53.802	10.355	622.038	755.628

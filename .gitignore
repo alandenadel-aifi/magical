@@ -13,3 +13,6 @@ tests/snapshots*/
 # Python bytecode caches
 tests/__pycache__/
 src/magical/__pycache__/
+
+# Benchmark run logs
+*.log

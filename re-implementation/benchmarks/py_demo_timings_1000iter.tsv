@@ -1,6 +1,5 @@
-stage	wall_seconds
-data_loading	11.8204
-candidate_circuits	12.7365
-initialization	3.2313
-estimation_1000iter	632.6854
-total	660.4736
+seed	n_iter	blas	data_loading_seconds	candidate_circuits_seconds	initialization_seconds	estimation_seconds	total_seconds
+20260723	1000	scipy_openblas_haswell	20.68	18.82	6.83	988.08	1034.40
+42	1000	scipy_openblas_haswell	20.50	19.13	6.97	991.92	1038.52
+20260723	1000	scipy_openblas	20.664	18.112	6.792	971.281	1016.849
+42	1000	scipy_openblas	20.503	18.353	6.759	993.004	1038.619

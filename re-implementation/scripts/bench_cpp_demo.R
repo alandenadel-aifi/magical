@@ -8,9 +8,11 @@
 #
 # Both args are optional; defaults are seed=20260723, n_iter=1000.
 
-args <- commandArgs(trailingOnly = TRUE)
-seed   <- if (length(args) >= 1) as.integer(args[1]) else 20260723L
-n_iter <- if (length(args) >= 2) as.integer(args[2]) else 1000L
+args      <- commandArgs(trailingOnly = TRUE)
+seed      <- if (length(args) >= 1) as.integer(args[1]) else 20260723L
+n_iter    <- if (length(args) >= 2) as.integer(args[2]) else 1000L
+blas_path <- sessionInfo()[["BLAS"]]
+blas_tag  <- if (grepl("openblas", blas_path, ignore.case = TRUE)) "openblas" else "ref_blas"
 
 # Locate the repo root: this script lives in re-implementation/scripts/.
 script_path <- sub("^--file=", "",
@@ -84,6 +86,7 @@ timings_file <- file.path(bench_dir, "cpp_demo_timings.tsv")
 row <- data.frame(
   seed          = seed,
   n_iter        = n_iter,
+  blas          = blas_tag,
   data_loading_seconds       = round(t_load, 3),
   candidate_circuits_seconds = round(t_circ, 3),
   initialization_seconds     = round(t_init, 3),
@@ -109,7 +112,7 @@ write_mat(out$Peak_Gene_Looping_prob, "Peak_Gene_Looping_prob")
 write_mat(out$Noise_parameters,       "Noise_parameters")
 writeLines(as.character(n_iter), file.path(snap_dir, "n_iter.txt"))
 writeLines(as.character(seed),   file.path(snap_dir, "seed.txt"))
-write.table(data.frame(TF = Candidate_circuits$TFs[, 1]),   file.path(snap_dir, "TFs.tsv"),   sep = "\t", quote = FALSE, row.names = FALSE)
+write.table(data.frame(name = Candidate_circuits$TFs$name),   file.path(snap_dir, "TFs.tsv"),   sep = "\t", quote = FALSE, row.names = FALSE)
 write.table(data.frame(Peak = Candidate_circuits$Peaks$Peak_index), file.path(snap_dir, "Peaks.tsv"), sep = "\t", quote = FALSE, row.names = FALSE)
 write.table(data.frame(Gene = Candidate_circuits$Genes$Gene_symbols), file.path(snap_dir, "Genes.tsv"), sep = "\t", quote = FALSE, row.names = FALSE)
 message(sprintf("[bench_cpp_demo] wrote snapshots to %s", snap_dir))
